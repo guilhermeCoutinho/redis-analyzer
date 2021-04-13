@@ -52,7 +52,7 @@ func scanRedis(ctx context.Context, rClient *redis.Client) *trie {
 	totalKeys := 0
 
 	for {
-		keys, cursor, err = rClient.Scan(ctx, cursor, "*", 1000).Result()
+		keys, cursor, err = rClient.Scan(ctx, cursor, "*", 10000).Result()
 		totalKeys += len(keys)
 		fmt.Printf("\rScanning keys. Total memory so far:%s", ByteCountSI(t.mem))
 
@@ -70,14 +70,21 @@ func scanRedis(ctx context.Context, rClient *redis.Client) *trie {
 }
 
 func addToTrie(ctx context.Context, rClient *redis.Client, t *trie, keys []string) {
+	pipe := rClient.Pipeline()
+	m := map[string]*redis.IntCmd{}
 	for _, key := range keys {
-		memUsage, err := rClient.MemoryUsage(ctx, key).Result()
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		prefixes := strings.Split(key, ":")
-		t.Add(prefixes, memUsage)
+		m[key] = pipe.MemoryUsage(ctx, key)
 	}
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	for key, memUsage := range m {
+		prefixes := strings.Split(key, ":")
+		mem, _ := memUsage.Result()
+		t.Add(prefixes, mem)
+	}
+
 }

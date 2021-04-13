@@ -22,6 +22,7 @@ func insertRandomKeysRoutine(rdb *redis.Client, size int) {
 	routines := 100
 	wg.Add(routines)
 	fmt.Println("Inserting random keys into redis.")
+
 	for i := 0; i < routines; i++ {
 		go func() {
 			defer wg.Done()
@@ -32,11 +33,13 @@ func insertRandomKeysRoutine(rdb *redis.Client, size int) {
 }
 
 func insertRandomKeys(ctx context.Context, rClient *redis.Client, n int) {
+	pipe := rClient.Pipeline()
 	for i := 0; i < n; i++ {
-		_, err := rClient.Set(ctx, randomKey(rand.Intn(3)), randomS(), 0).Result()
-		if err != nil {
-			fmt.Print(err.Error())
-		}
+		pipe.Set(ctx, randomKey(rand.Intn(3)), randomS(), 0)
+	}
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
 }
 
