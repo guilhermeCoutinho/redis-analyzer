@@ -3,13 +3,29 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
+	"runtime/pprof"
 	"strings"
 
 	redis "github.com/go-redis/redis/v8"
 )
 
+const (
+	enableProfiler   = false
+	profilerFileName = "cpu_profile"
+)
+
 func main() {
+	if enableProfiler {
+		f, err := os.Create(profilerFileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:9001",
 		DB:       0,
