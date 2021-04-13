@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/guilhermeCoutinho/concurrent-generic-heap/heap"
 )
@@ -31,11 +32,18 @@ func (t *trie) printRecursively(prefix, childrenPrefix string, currD, maxD int, 
 		pattern = "*"
 	}
 
-	memPercent := fmt.Sprintf("%d%%", int64(100*float64(t.mem)/float64(totalMem)))
+	memPercent := fmt.Sprintf("%.2f%%", 100*float64(t.mem)/float64(totalMem))
 	fmt.Println(prefix, string(t.prefix)+pattern, ByteCountSI(t.mem), memPercent)
 
+	orderedChildren := []*trie{}
 	for _, v := range t.children {
-		v.printRecursively(childrenPrefix+"|─── ", childrenPrefix+"|    ", currD+1, maxD, totalMem)
+		if v != nil {
+			orderedChildren = append(orderedChildren, v)
+		}
+	}
+	sort.Slice(orderedChildren, func(i, j int) bool { return orderedChildren[i].mem > orderedChildren[j].mem })
+	for _, child := range orderedChildren {
+		child.printRecursively(childrenPrefix+"|─── ", childrenPrefix+"|    ", currD+1, maxD, totalMem)
 	}
 }
 
