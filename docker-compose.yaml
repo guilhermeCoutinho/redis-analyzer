@@ -1,0 +1,8 @@
+version: '3.7'
+
+services:
+    redis:
+        image: redis:6.2.1-alpine
+        container_name: test-redis
+        ports:
+            - 9001:6379
